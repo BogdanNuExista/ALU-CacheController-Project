@@ -1,359 +1,323 @@
-////////////////////// Main Module /////////////////////
-
-module main(y1,y2,y3,cout,carry_out,m,sel,a,b,x,y,A,B,j,k,cin,Op);
-
-output reg [15:0]y1;
-output reg [31:0]y2;
-output reg [15:0]y3;
-output cout;
-output carry_out;
-output m;
-input [2:0]sel;
-input [15:0]a;
-input [15:0]b;
-input [15:0]x;
-input [15:0]y;
-input [15:0]A;
-input [15:0]B;
-input [15:0]j;
-input [15:0]k;
-input cin;
-input Op;
-
-wire [15:0]s;
-
-wire [15:0]sum;
-
-wire [15:0]buff1;
-wire [15:0]buff2;
-
-wire [15:0]rightshift;
-wire [15:0]leftshift;
-
-wire [15:0] quotent;
-wire [15:0] reminder;
-
-////////////////////////////////////////////////////
-
-CLAdder c1(s,cout,a,b,cin);
-subtractor sub1(sum,carry_out,m,x,y,Op);
-multiplier m1(buff1,buff2,A,B);
-shifter shift1(leftshift,rightshift,j,k);
-division_module divmod(A,B,quotent,reminder);
-
-always@*
-    begin
-        if(sel==3'b000)
-        begin
-             y1[15:0] = s[15:0];
-             y2[31:0] = 31'bz;
-             y3[15:0] = 16'bz; 
-        end
-        else if(sel==3'b001)
-        begin
-             y1[15:0] = sum[15:0];
-             y2 [15:0] = 16'bz;
-             y3[15:0] = 16'bz;  
-        end
-        else if(sel==3'b010)
-        begin
-             y2[31:0] = {buff1[15:0],buff2[15:0]};   
-             y1[15:0] = 16'bz;
-             y3[15:0] = 16'bz;
-        end
-        else if(sel==3'b011)
-        begin   
-             y3[15:0] = leftshift[15:0];
-             y1[15:0] = rightshift[15:0];
-             y2 [15:0] = 16'bz;
-        end
-        else if(sel==3'b100)
-        begin
-             y1[15:0]=quotent[15:0];
-             y3[15:0]=reminder[15:0];
-             y2[31:0]=31'bz;
-        end
-    end
-endmodule
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////// ADDER //////////////////////
-module CLAdder(s, cout, a,b, cin);
-output [15:0]s;
-output cout;
-input cin;
-
-input [15:0]a;
-input [15:0]b; 
-
-wire cout1;                                             
-cladder4 cla1(s[3:0],cout1,a[3:0],b[3:0],cin);         
-cladder4 cla2(s[7:4],cout2,a[7:4],b[7:4],cout1);           
-cladder4 cla3(s[11:8],cout3,a[11:8],b[11:8],cout2);       
-cladder4 cla4(s[15:12],cout,a[15:12],b[15:12],cout3);        
-endmodule
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-module cladder4(output [3:0]s, c3, input [3:0]a, [3:0]b, cin);
-
-PFAdder pfa1(s[0],p0,g0,a[0],b[0],cin);              
-cla_logic clogic1(c0,p0,g0,cin);                  
-
-PFAdder pfa2(s[1],p1,g1,a[1],b[1],c0);
-cla_logic clogic2(c1,p1,g1,c0);
-
-PFAdder pfa3(s[2],p2,g2,a[2],b[2],c1);
-cla_logic clogic3(c2,p2,g2,c1);
-
-PFAdder pfa4(s[3],p3,g3,a[3],b[3],c2);
-cla_logic clogic4(c3,p3,g3,c2);
-endmodule
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-module PFAdder(output s,p,g, input a,b,cin);
-xor(s,a,b,cin);                     
-and(g,a,b);                         
-xor(p,a,b);                           
-endmodule
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/////CLA Logic:
-
-module cla_logic(output c,input p,g,cin);
-wire w1;                    
-and(w1,p,cin);             
-or(c,g,w1);                 
-endmodule
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////// SUBTRACTOR ///////////////////////
-module subtractor(sum, carry_out, m, x, y, Op);
-   output [15:0] sum;  
-   output      carry_out; 
-   output      m;  
-   input [15:0]        x;  
-   input [15:0]        y;  
-   input       Op; 
-  
-   wire C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15;
-   wire B0,B1,B2,B3,B4,B5,B6,B7,B8,B9,B10,B11,B12,B13,B14,B15;
-   
-    xor(B0, y[0], Op);
-    xor(B1, y[1], Op);
-    xor(B2, y[2], Op);
-    xor(B3, y[3], Op);
-    xor(B4, y[4], Op);
-    xor(B5, y[5], Op);
-    xor(B6, y[6], Op);
-    xor(B7, y[7], Op);
-    xor(B8, y[8], Op);
-    xor(B9, y[9], Op);
-    xor(B10, y[10], Op);
-    xor(B11, y[11], Op);
-    xor(B12, y[12], Op);
-    xor(B13, y[13], Op);
-    xor(B14, y[14], Op);
-    xor(B15, y[15], Op);
-    xor(carry_out, C15, Op);    
-    xor(m, C15, C14);    
-  
-    fulladder fa0(sum[0], C0, x[0], B0, Op);   
-    fulladder fa1(sum[1], C1, x[1], B1, C0);
-    fulladder fa2(sum[2], C2, x[2], B2, C1);
-    fulladder fa3(sum[3], C3, x[3], B3, C2);   
-    fulladder fa4(sum[4], C4, x[4], B4, C3);   
-    fulladder fa5(sum[5], C5, x[5], B5, C4);   
-    fulladder fa6(sum[6], C6, x[6], B6, C5);   
-    fulladder fa7(sum[7], C7, x[7], B7, C6);   
-    fulladder fa8(sum[8], C8, x[8], B8, C7);   
-    fulladder fa9(sum[9], C9, x[9], B9, C8);   
-    fulladder fa10(sum[10], C10, x[10], B10, C9);   
-    fulladder fa11(sum[11], C11, x[11], B11, C10);   
-    fulladder fa12(sum[12], C12, x[12], B12, C11);   
-    fulladder fa13(sum[13], C13, x[13], B13, C12);   
-    fulladder fa14(sum[14], C14, x[14], B14, C13);   
-    fulladder fa15(sum[15], C15, x[15], B15, C14);   
-endmodule
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-module fulladder(S, Cout, A, B, Cin);
-   output S;
-   output Cout;
-   input  A;
-   input  B;
-   input  Cin;
-     wire   w1,w2,w3,w4;
-     xor(w1, A, B);
-   xor(S, Cin, w1);
-   and(w2, A, B);  
-   and(w3, A, Cin);
-   and(w4, B, Cin);  
-   or(Cout, w2, w3, w4);
-endmodule
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/////////////// MULTIPLIER ////////////////////////
-
-
-module multiplier(buff1,buff2,A,B);
-
-output reg [15:0] buff1;
-output reg [15:0] buff2;
-input [15:0] A;
-input [15:0] B;
-
-reg [15:0] C;
-integer i;
-
-always @* begin
-    buff1 = 0;
-    C = B;
-    for(i=0; i<16; i=i+1) begin
-        if(C[0] == 1) begin
-            buff1 = buff1 + A;
-            C = C >> 1;
-            C[15] = buff1[0];
-            buff1 = buff1 >> 1;
-        end else if(C[0] == 0) begin
-            C = C >> 1;
-            C[15] = buff1[0];
-            buff1 = buff1 >> 1;
-        end
-        buff2 = C;
-    end       
-end
-endmodule
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-////////////////// SHIFTER /////////////////
-module shifter(
-    output reg [15:0] leftshift,
-    output reg [15:0] rightshift,
-    input [15:0] j,
-    input [15:0] k);
-always@(k)
-begin
-leftshift = j<<k;
-rightshift <= j>>k;
-end
-
-endmodule
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////// DIVISION //////////////////////
-
-module division_module(
-    input [15:0] dividend, 
-    input [15:0] divisor,  
-    output reg [15:0] quotient,  
-    output reg [15:0] remainder  
+module CacheController (
+    input clk,
+    input reset,
+    input [31:0] address,
+    input [31:0] write_data,
+    input read,
+    input write,
+    output reg [31:0] read_data,
+    output reg hit,
+    output reg mem_read,
+    output reg mem_write,
+    output reg [31:0] mem_address,
+    output reg [31:0] mem_write_data,
+    input [31:0] mem_read_data,
+    input mem_ready
 );
+    parameter CACHE_SIZE = 32 * 1024; // 32 KB
+    parameter BLOCK_SIZE = 64;        // 64 bytes
+    parameter NUM_SETS = 128;         // Number of sets
+    parameter ASSOCIATIVITY = 4;      // 4-way set associative
+    parameter NUM_BLOCKS = CACHE_SIZE / BLOCK_SIZE;
 
-reg [15:0] dividend_reg;
-reg [15:0] quotient_reg;
-reg [15:0] remainder_reg;
-reg [15:0] partial_remainder;
+    // Calculating indices
+    parameter INDEX_BITS = $clog2(NUM_SETS);
+    parameter OFFSET_BITS = $clog2(BLOCK_SIZE);
+    parameter TAG_BITS = 32 - INDEX_BITS - OFFSET_BITS;
 
-integer i;
+    // Cache block structure
+    reg [TAG_BITS-1:0] tags [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
+    reg [BLOCK_SIZE*8-1:0] data [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
+    reg valid [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
+    reg dirty [NUM_SETS-1:0][ASSOCIATIVITY-1:0]; // Dirty bits for write-back policy
+    reg [1:0] lru [NUM_SETS-1:0][ASSOCIATIVITY-1:0]; // LRU bits for replacement policy
 
-always @* begin
-    dividend_reg = dividend;
-    quotient_reg = 0;
-    remainder_reg = 0;
+    // State definitions
+    localparam IDLE = 3'b000;
+    localparam READ_HIT = 3'b001;
+    localparam READ_MISS = 3'b010;
+    localparam WRITE_HIT = 3'b011;
+    localparam WRITE_MISS = 3'b100;
+    localparam EVICT = 3'b101;
+    localparam FETCH = 3'b110; // State to fetch data from memory
 
-    for (i = 15; i >= 0; i = i - 1) begin
-        partial_remainder = {remainder_reg, dividend_reg[i]}; 
-        if (partial_remainder >= divisor) begin
-            partial_remainder = partial_remainder - divisor; 
-            quotient_reg[i] = 1'b1;
+    reg [2:0] state, next_state;
+    
+    // Internal signals
+    reg [INDEX_BITS-1:0] index;
+    reg [TAG_BITS-1:0] tag;
+    reg [OFFSET_BITS-1:0] offset;
+    reg hit_detected;
+    integer i, j;
+
+    // LRU update function
+    task update_lru(input [INDEX_BITS-1:0] set, input [1:0] way);
+        begin
+            // Update LRU counters
+            for (i = 0; i < ASSOCIATIVITY; i = i + 1) begin
+                if (lru[set][i] < lru[set][way])
+                    lru[set][i] = lru[set][i] + 1;
+            end
+            lru[set][way] = 0;
         end
-        remainder_reg = partial_remainder;
+    endtask
+
+    // Address decomposition
+    always @(*) begin
+        index = address[OFFSET_BITS + INDEX_BITS - 1: OFFSET_BITS];
+        tag = address[31: 32 - TAG_BITS];
+        offset = address[OFFSET_BITS-1:0];
     end
-end
 
-always @* begin
-    quotient = quotient_reg;
-    remainder = remainder_reg;
-end
+    // FSM State Transitions
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            state <= IDLE;
+        else
+            state <= next_state;
+    end
 
+    // FSM Next State Logic
+    always @(*) begin
+        next_state = state;
+        case (state)
+            IDLE: begin
+                if (read || write) begin
+                    hit_detected = 0;
+                    for (i = 0; i < ASSOCIATIVITY; i = i + 1) begin
+                        if (valid[index][i] && tags[index][i] == tag) begin
+                            hit_detected = 1;
+                        end
+                    end
+                    if (hit_detected) begin
+                        if (read)
+                            next_state = READ_HIT;
+                        else
+                            next_state = WRITE_HIT;
+                    end else begin
+                        if (read)
+                            next_state = READ_MISS;
+                        else
+                            next_state = WRITE_MISS;
+                    end
+                end
+            end
+            READ_HIT: next_state = IDLE;
+            WRITE_HIT: next_state = IDLE;
+            READ_MISS: next_state = FETCH;
+            WRITE_MISS: next_state = FETCH;
+            FETCH: begin
+                if (mem_ready)
+                    next_state = EVICT;
+            end
+            EVICT: next_state = IDLE;
+        endcase
+    end
+
+    // FSM Output Logic
+    always @(posedge clk) begin
+        if (reset) begin
+            // Initialize cache
+            for (i = 0; i < NUM_SETS; i = i + 1)
+                for (j = 0; j < ASSOCIATIVITY; j = j + 1) begin
+                    valid[i][j] <= 0;
+                    dirty[i][j] <= 0;
+                    lru[i][j] <= j;
+                end
+            read_data <= 0;
+            hit <= 0;
+            mem_read <= 0;
+            mem_write <= 0;
+            mem_address <= 0;
+            mem_write_data <= 0;
+        end else begin
+            case (state)
+                IDLE: begin
+                    hit <= 0;
+                end
+                READ_HIT: begin
+                    for (i = 0; i < ASSOCIATIVITY; i = i + 1) begin
+                        if (valid[index][i] && tags[index][i] == tag) begin
+                            read_data <= data[index][i][offset*8 +: 32];
+                            update_lru(index, i);
+                            hit <= 1;
+                        end
+                    end
+                end
+                WRITE_HIT: begin
+                    for (i = 0; i < ASSOCIATIVITY; i = i + 1) begin
+                        if (valid[index][i] && tags[index][i] == tag) begin
+                            data[index][i][offset*8 +: 32] <= write_data;
+                            dirty[index][i] <= 1; // Mark block as dirty
+                            update_lru(index, i);
+                            hit <= 1;
+                        end
+                    end
+                end
+                READ_MISS, WRITE_MISS: begin
+                    mem_read <= 1;
+                    mem_address <= address & ~(BLOCK_SIZE-1);
+                end
+                EVICT: begin
+                    for (i = 0; i < ASSOCIATIVITY; i = i + 1) begin
+                        if (lru[index][i] == (ASSOCIATIVITY - 1)) begin
+                            if (dirty[index][i]) begin
+                                mem_write <= 1;
+                                mem_address <= {tags[index][i], index, {OFFSET_BITS{1'b0}}};
+                                mem_write_data <= data[index][i];
+                            end
+                            tags[index][i] <= tag;
+                            valid[index][i] <= 1;
+                            dirty[index][i] <= 0;
+                            update_lru(index, i);
+                        end
+                    end
+                end
+                FETCH: begin
+                    if (mem_ready) begin
+                        for (i = 0; i < ASSOCIATIVITY; i = i + 1) begin
+                            if (lru[index][i] == (ASSOCIATIVITY - 1)) begin
+                                data[index][i] <= mem_read_data;
+                                valid[index][i] <= 1;
+                                dirty[index][i] <= 0;
+                                tags[index][i] <= tag;
+                                update_lru(index, i);
+                            end
+                        end
+                        mem_read <= 0;
+                        mem_write <= 0;
+                    end
+                end
+            endcase
+        end
+    end
 endmodule
 
-/// TESTBENCH 
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 module main_tb;
-  
-reg [2:0]sel;
-reg [15:0]a;
-reg [15:0]b;
-reg [15:0]x;
-reg [15:0]y;
-reg [15:0]A;
-reg [15:0]B;
-reg [15:0]j;
-reg [15:0]k;
-reg cin;
-reg Op;
+    reg clk;
+    reg reset;
+    reg [31:0] address;
+    reg [31:0] write_data;
+    reg read;
+    reg write;
+    wire [31:0] read_data;
+    wire hit;
+    wire mem_read;
+    wire mem_write;
+    wire [31:0] mem_address;
+    wire [31:0] mem_write_data;
+    reg [31:0] mem_read_data;
+    reg mem_ready;
 
-wire [15:0]y1;
-wire [31:0]y2;
-wire [15:0]y3;
-wire cout;
-wire carry_out;
-wire m;
+    // Instantiate the cache controller
+    CacheController uut (
+        .clk(clk),
+        .reset(reset),
+        .address(address),
+        .write_data(write_data),
+        .read(read),
+        .write(write),
+        .read_data(read_data),
+        .hit(hit),
+        .mem_read(mem_read),
+        .mem_write(mem_write),
+        .mem_address(mem_address),
+        .mem_write_data(mem_write_data),
+        .mem_read_data(mem_read_data),
+        .mem_ready(mem_ready)
+    );
 
-main uut(y1,y2,y3,cout,carry_out,m,sel,a,b,x,y,A,B,j,k,cin,Op);
-initial begin
-sel = 3'b000; // selectam operatia de adunare
-a = 10;
-b = 20;
+    // Clock generation
+    always #5 clk = ~clk;
 
-cin = 0;
-Op = 1;
-#10;
-$display("Adunand nr: %d + %d obtinem : %d",a,b,y1);
+    // Test procedure
+    initial begin
+        // Initialize signals
+        clk = 0;
+        reset = 1;
+        address = 0;
+        write_data = 0;
+        read = 0;
+        write = 0;
+        mem_ready = 0;
+        mem_read_data = 0;
 
-sel = 3'b001; // selectam operatia de scadere 
+        // Apply reset
+        #10;
+        reset = 0;
+        $display("Simulation started.");
 
-x = 25;
-y = 11;
+        // Test Case 1: Read miss, fetch from memory
+        $display("");
+        $display("Test Case 1: Read miss, fetch from memory");
+        address = 32'h0000_0040;
+        read = 1;
+        #10;
+        read = 0;
+        #10;
+        mem_ready = 1;
+        mem_read_data = 32'hDEAD_BEEF;
+        #10;
+        mem_ready = 0;
+        #10;
+        $display("Data read from cache: %h, Hit: %b", read_data, hit);
 
-cin = 0;
-Op = 1;
-#10;
-$display("Scazand nr: %d - %d obtinem : %d",x,y,y1);
+        // Test Case 2: Read hit
+        $display("");
+        $display("Test Case 2: Read hit");
+        address = 32'h0000_0040;
+        read = 1;
+        #10;
+        read = 0;
+        #10;
+        $display("Data read from cache: %h, Hit: %b", read_data, hit);
 
-sel = 3'b010; // selectam operatia de inmultire
+        // Test Case 3: Write miss, fetch from memory, then write
+        $display("");
+        $display("Test Case 3: Write miss, fetch from memory, then write");
+        address = 32'h0000_0080;
+        write_data = 32'hCAFEBABE;
+        write = 1;
+        #10;
+        write = 0;
+        #10;
+        mem_ready = 1;
+        mem_read_data = 32'hF00D_F00D;
+        #10;
+        mem_ready = 0;
+        #10;
+        $display("Write data to cache: %h, Hit: %b", write_data, hit);
 
-A = 16'b0000000000001000;
-B = 16'b0000000000001000;
+        // Test Case 4: Write hit
+        $display("");
+        $display("Test Case 4: Write hit");
+        address = 32'h0000_0080;
+        write_data = 32'hDEADBEEF;
+        write = 1;
+        #10;
+        write = 0;
+        #10;
+        $display("Write data to cache: %h, Hit: %b", write_data, hit);
 
-cin = 0;
-Op = 1;
-#10;
-$display("Inmultind nr:%d * %d obtinem : %d",A,B,y2);
+        // Test Case 5: Read hit after write
+        $display("");
+        $display("Test Case 5: Read hit after write");
+        address = 32'h0000_0080;
+        read = 1;
+        #10;
+        read = 0;
+        #10;
+        $display("Data read from cache: %h, Hit: %b", read_data, hit);
 
-sel = 3'b011; // selectam operatia de shiftare
-
-j = 16'hff12;
-k = 3;
-
-cin = 0;
-Op = 1;
-#10;
-$display("Shiftand numarul j=%d cu k=%d pozitii obinem: %d",j,k,y3);
-
-sel = 3'b100;
-
-A = 15;
-B = 2;
-
-cin = 0;
-Op = 1;
-#10;
-$display("Impartind nr:%d / %d obtinem : %d rest %d",A,B,y1,y3);
-
-end
+        // Finish simulation
+        $display("");
+        $display("Simulation finished.");
+    end
 endmodule
-
 
